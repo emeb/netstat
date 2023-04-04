@@ -28,6 +28,11 @@ package of the WS2812b LEDs mainly because those work well with the way the
 eyeballs are constructed and soldered 4-conductor ribbon cable with 0.1" header
 termination to connect to the ESP.
 
+Note - The RGB LEDs are powered from the available 5V supply but the serial
+control stream is driven at 3.3V logic levels without buffering to 5V levels. This
+seems to work OK, but I did see some color combinations that resulted in the
+first LED in the string flickering so there is some code to avoid those.
+
 ### Skull
 The skull is a plastic model that I bought at a hobby store decades ago and had
 been sitting on a shelf gathering dust for years. The top comes off and provides
