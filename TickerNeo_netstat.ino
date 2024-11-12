@@ -1,6 +1,7 @@
 /*
   Neopixels updated from within ticker with ping determining base color
   04-01-2023 E. Brombaugh
+  11-10-2024 E. Brombaugh - fixed case where external ping failed but indicated green
 */
 
 // http://arduino.esp8266.com/versions/1.6.5-1160-gef26c5f/doc/reference.html
@@ -31,10 +32,11 @@ const char* myPASSWORD = "YOUR_PASSWORD";
 const uint8_t pingCount = 1;     // number of Ping repetition
 const uint8_t pingInterval = 1;  // Ping repetition every n sec 
 const uint8_t ipCount = 2;       // number of IP addresses in pingIp[] array
-const char* pingIp[ipCount] = {"YOUR_ROUTER_IP", "8.8.8.8"};
+const char* pingIp[ipCount] = {"192.168.0.1", "8.8.8.8"};
 struct ping_option pingOpt, pOpt;
 struct ping_resp pingResp;
 int pingstate = 0;
+int pingresult = 0;
 
 // Network status 0-2 determines color
 int netstat = 0;
@@ -83,12 +85,14 @@ void led_update()
 //
 void pingRecv(void *arg, void *pdata)
 {
-#if 0
   //struct ping_option *pingOpt = (struct ping_option *)arg;
   struct ping_resp *pingResp = (struct  ping_resp *)pdata;
   
   if(pingResp->ping_err == -1)
+  {
     Serial.println("No Pong (device OFFline)");
+    pingresult = 0;
+  }
   else
   {
     Serial.print("ping recv: bytes = ");
@@ -96,8 +100,8 @@ void pingRecv(void *arg, void *pdata)
     Serial.print(", time = ");
     Serial.print(pingResp->resp_time);
     Serial.println("ms");
+    pingresult = 1;
   }
-#endif
 }
 
 //
@@ -117,8 +121,8 @@ void pingDone(void *arg, void *pdata)
 //
 int do_ping(const char *targetIpAddress)
 {
-  //Serial.print("Ping IP: ");
-  //Serial.println(targetIpAddress);
+  Serial.print("Ping IP: ");
+  Serial.println(targetIpAddress);
   
   struct ping_option *pingOpt = &pOpt;
   pingOpt->count = pingCount;
@@ -134,11 +138,14 @@ int do_ping(const char *targetIpAddress)
   {
     delay(10);
   }
-  //Serial.println("do_ping - complete");
-  //Serial.println(pingResp.ping_err);
-  if(pingResp.ping_err == -1)
+  Serial.print("do_ping - complete: ");
+  if(!pingresult)
+  {
+    Serial.println("pong missing");
     return 0;
-  
+  }
+
+  Serial.println("pong received");
   return 1;
 }
 
@@ -210,17 +217,11 @@ void loop()
   digitalWrite(LED_PIN, ledState);
   ledState = ledState ^ 1;
 
-#if 0
-  // update netstat every 8 sec for testing
-  count++;
-  netstat = (count >> 3)&3;
-#else
   // get actual network status
   netstat = get_netstate()&3;
-#endif
   Serial.print("Netstat: ");
   Serial.println(netstat);
 
   // pause for a second
-  delay(1000);
+  delay(5000);
 }
